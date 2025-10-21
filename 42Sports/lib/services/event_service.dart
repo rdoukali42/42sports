@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event.dart';
 import '../models/event_type.dart';
@@ -10,6 +11,23 @@ class EventService {
   static const String _userEventsKey = 'user_events';
 
   Future<List<Event>> getAllEvents() async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.get(
+          Uri.parse('${AppConstants.backendUrl}/events'),
+        );
+        
+        if (response.statusCode == 200) {
+          final List<dynamic> decoded = jsonDecode(response.body);
+          return decoded.map((e) => Event.fromJson(e)).toList();
+        }
+      } catch (e) {
+        print('Error fetching events from backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final prefs = await SharedPreferences.getInstance();
     final eventsJson = prefs.getString(_eventsKey);
     if (eventsJson == null) return [];
@@ -47,6 +65,24 @@ class EventService {
   }
 
   Future<Event> createEvent(Event event) async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.post(
+          Uri.parse('${AppConstants.backendUrl}/events'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(event.toJson()),
+        );
+        
+        if (response.statusCode == 201) {
+          return Event.fromJson(jsonDecode(response.body));
+        }
+      } catch (e) {
+        print('Error creating event on backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final events = await getAllEvents();
     events.add(event);
     await _saveEvents(events);
@@ -54,6 +90,24 @@ class EventService {
   }
 
   Future<Event> updateEvent(Event updatedEvent) async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.put(
+          Uri.parse('${AppConstants.backendUrl}/events/${updatedEvent.id}'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(updatedEvent.toJson()),
+        );
+        
+        if (response.statusCode == 200) {
+          return Event.fromJson(jsonDecode(response.body));
+        }
+      } catch (e) {
+        print('Error updating event on backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final events = await getAllEvents();
     final index = events.indexWhere((e) => e.id == updatedEvent.id);
     
@@ -179,8 +233,7 @@ class EventService {
       createdAt: event.createdAt,
     );
 
-    events[index] = updatedEvent;
-    await _saveEvents(events);
+    await updateEvent(updatedEvent);
   }
 
   Future<void> completeEvent(String eventId) async {
@@ -207,8 +260,7 @@ class EventService {
       createdAt: event.createdAt,
     );
 
-    events[index] = updatedEvent;
-    await _saveEvents(events);
+    await updateEvent(updatedEvent);
   }
 
   Future<void> _saveEvents(List<Event> events) async {

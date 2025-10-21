@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/tournament.dart';
 import '../models/team.dart';
@@ -11,6 +12,23 @@ class TournamentService {
   static const String _teamsKey = 'teams';
 
   Future<List<Tournament>> getAllTournaments() async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.get(
+          Uri.parse('${AppConstants.backendUrl}/tournaments'),
+        );
+        
+        if (response.statusCode == 200) {
+          final List<dynamic> decoded = jsonDecode(response.body);
+          return decoded.map((e) => Tournament.fromJson(e)).toList();
+        }
+      } catch (e) {
+        print('Error fetching tournaments from backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final prefs = await SharedPreferences.getInstance();
     final tournamentsJson = prefs.getString(_tournamentsKey);
     if (tournamentsJson == null) return [];
@@ -30,6 +48,24 @@ class TournamentService {
   }
 
   Future<Tournament> createTournament(Tournament tournament) async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.post(
+          Uri.parse('${AppConstants.backendUrl}/tournaments'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(tournament.toJson()),
+        );
+        
+        if (response.statusCode == 201) {
+          return Tournament.fromJson(jsonDecode(response.body));
+        }
+      } catch (e) {
+        print('Error creating tournament on backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final tournaments = await getAllTournaments();
     tournaments.add(tournament);
     await _saveTournaments(tournaments);
@@ -37,6 +73,24 @@ class TournamentService {
   }
 
   Future<Tournament> updateTournament(Tournament updated) async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.put(
+          Uri.parse('${AppConstants.backendUrl}/tournaments/${updated.id}'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(updated.toJson()),
+        );
+        
+        if (response.statusCode == 200) {
+          return Tournament.fromJson(jsonDecode(response.body));
+        }
+      } catch (e) {
+        print('Error updating tournament on backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final tournaments = await getAllTournaments();
     final index = tournaments.indexWhere((t) => t.id == updated.id);
     
@@ -66,7 +120,7 @@ class TournamentService {
       print('Refunded ${AppConstants.tournamentTokenCost} tokens to ${user.login}. New balance: $newTokenCount');
     }
     
-    tournaments[index] = Tournament(
+    final updatedTournament = Tournament(
       id: tournament.id,
       name: tournament.name,
       description: tournament.description,
@@ -84,13 +138,31 @@ class TournamentService {
       status: TournamentStatus.cancelled,
       createdAt: tournament.createdAt,
       bracketData: tournament.bracketData,
+      sport: tournament.sport,
     );
 
-    await _saveTournaments(tournaments);
+    await updateTournament(updatedTournament);
   }
 
   // Team Management
   Future<List<Team>> getAllTeams() async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.get(
+          Uri.parse('${AppConstants.backendUrl}/teams'),
+        );
+        
+        if (response.statusCode == 200) {
+          final List<dynamic> decoded = jsonDecode(response.body);
+          return decoded.map((e) => Team.fromJson(e)).toList();
+        }
+      } catch (e) {
+        print('Error fetching teams from backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final prefs = await SharedPreferences.getInstance();
     final teamsJson = prefs.getString(_teamsKey);
     if (teamsJson == null) return [];
@@ -105,6 +177,60 @@ class TournamentService {
   }
 
   Future<Team> createTeam(Team team) async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.post(
+          Uri.parse('${AppConstants.backendUrl}/teams'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(team.toJson()),
+        );
+        
+        if (response.statusCode == 201) {
+          final createdTeam = Team.fromJson(jsonDecode(response.body));
+          
+          // Update tournament with new team ID
+          final tournaments = await getAllTournaments();
+          final tIndex = tournaments.indexWhere((t) => t.id == team.tournamentId);
+          if (tIndex != -1) {
+            final tournament = tournaments[tIndex];
+            final updatedTeamIds = [...tournament.teamIds, createdTeam.id];
+            final updatedTournament = Tournament(
+              id: tournament.id,
+              name: tournament.name,
+              description: tournament.description,
+              startDate: tournament.startDate,
+              location: tournament.location,
+              minTeams: tournament.minTeams,
+              maxTeams: tournament.maxTeams,
+              minTeamSize: tournament.minTeamSize,
+              maxTeamSize: tournament.maxTeamSize,
+              matchmakingType: tournament.matchmakingType,
+              rules: tournament.rules,
+              creatorId: tournament.creatorId,
+              creatorName: tournament.creatorName,
+              teamIds: updatedTeamIds,
+              status: tournament.maxTeams != null &&
+                      updatedTeamIds.length >= tournament.maxTeams!
+                  ? TournamentStatus.ready
+                  : (updatedTeamIds.length >= tournament.minTeams
+                      ? TournamentStatus.ready
+                      : TournamentStatus.registering),
+              createdAt: tournament.createdAt,
+              bracketData: tournament.bracketData,
+              sport: tournament.sport,
+            );
+            await updateTournament(updatedTournament);
+          }
+          
+          return createdTeam;
+        }
+      } catch (e) {
+        print('Error creating team on backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final teams = await getAllTeams();
     teams.add(team);
     await _saveTeams(teams);
@@ -115,7 +241,7 @@ class TournamentService {
     if (tIndex != -1) {
       final tournament = tournaments[tIndex];
       final updatedTeamIds = [...tournament.teamIds, team.id];
-      tournaments[tIndex] = Tournament(
+      final updatedTournament = Tournament(
         id: tournament.id,
         name: tournament.name,
         description: tournament.description,
@@ -138,6 +264,7 @@ class TournamentService {
                 : TournamentStatus.registering),
         createdAt: tournament.createdAt,
         bracketData: tournament.bracketData,
+        sport: tournament.sport,
       );
       await _saveTournaments(tournaments);
     }
@@ -146,6 +273,24 @@ class TournamentService {
   }
 
   Future<Team?> updateTeam(Team updated) async {
+    if (AppConstants.useBackend) {
+      try {
+        final response = await http.put(
+          Uri.parse('${AppConstants.backendUrl}/teams/${updated.id}'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(updated.toJson()),
+        );
+        
+        if (response.statusCode == 200) {
+          return Team.fromJson(jsonDecode(response.body));
+        }
+      } catch (e) {
+        print('Error updating team on backend: $e');
+        // Fall back to local storage
+      }
+    }
+    
+    // Local storage fallback
     final teams = await getAllTeams();
     final index = teams.indexWhere((t) => t.id == updated.id);
     
