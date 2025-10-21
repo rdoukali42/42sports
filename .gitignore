@@ -1,0 +1,38 @@
+# Ignore Co-applicant.md file
+Co-applicant.md
+
+# Flutter/Dart
+.dart_tool/
+.packages
+pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Build outputs (heavy APK files)
+build/
+
+# Android
+android/app/build/
+android/.gradle/
+android/local.properties
+
+# iOS
+ios/Pods/
+ios/Runner.xcworkspace/xcuserdata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
