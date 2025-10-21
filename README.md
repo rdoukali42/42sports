@@ -7,7 +7,7 @@ A Flutter-based mobile app for organizing sports events at 42 campuses with a to
 ## 🚀 Quick Start (Easiest Way)
 
 ### 1. Download APK
-**[Download 42Sports APK](https://drive.google.com/file/d/1CqnqTCwr2YCZhANca8Df2cAT0SjU7ot8/view?usp=sharing)**
+**[Download 42Sports APK](https://drive.google.com/file/d/1V3rkLjOLQpaq29DbHyzkDOxL1_HF6YKT/view?usp=sharing)** (Shuted down for safety reasons - BUILD YOUR APP)
 
 ### 2. Install on Android Device
 1. Transfer APK to your Android device
