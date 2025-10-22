@@ -14,8 +14,9 @@ class TournamentService {
   Future<List<Tournament>> getAllTournaments() async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.get(
-          Uri.parse('${AppConstants.backendUrl}/tournaments'),
+          Uri.parse('$backendUrl/tournaments'),
         );
         
         if (response.statusCode == 200) {
@@ -50,8 +51,9 @@ class TournamentService {
   Future<Tournament> createTournament(Tournament tournament) async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.post(
-          Uri.parse('${AppConstants.backendUrl}/tournaments'),
+          Uri.parse('$backendUrl/tournaments'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(tournament.toJson()),
         );
@@ -75,8 +77,9 @@ class TournamentService {
   Future<Tournament> updateTournament(Tournament updated) async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.put(
-          Uri.parse('${AppConstants.backendUrl}/tournaments/${updated.id}'),
+          Uri.parse('$backendUrl/tournaments/${updated.id}'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(updated.toJson()),
         );
@@ -148,8 +151,9 @@ class TournamentService {
   Future<List<Team>> getAllTeams() async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.get(
-          Uri.parse('${AppConstants.backendUrl}/teams'),
+          Uri.parse('$backendUrl/teams'),
         );
         
         if (response.statusCode == 200) {
@@ -179,8 +183,9 @@ class TournamentService {
   Future<Team> createTeam(Team team) async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.post(
-          Uri.parse('${AppConstants.backendUrl}/teams'),
+          Uri.parse('$backendUrl/teams'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(team.toJson()),
         );
@@ -275,8 +280,9 @@ class TournamentService {
   Future<Team?> updateTeam(Team updated) async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.put(
-          Uri.parse('${AppConstants.backendUrl}/teams/${updated.id}'),
+          Uri.parse('$backendUrl/teams/${updated.id}'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(updated.toJson()),
         );

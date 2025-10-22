@@ -13,8 +13,9 @@ class EventService {
   Future<List<Event>> getAllEvents() async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.get(
-          Uri.parse('${AppConstants.backendUrl}/events'),
+          Uri.parse('$backendUrl/events'),
         );
         
         if (response.statusCode == 200) {
@@ -67,8 +68,9 @@ class EventService {
   Future<Event> createEvent(Event event) async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.post(
-          Uri.parse('${AppConstants.backendUrl}/events'),
+          Uri.parse('$backendUrl/events'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(event.toJson()),
         );
@@ -92,8 +94,9 @@ class EventService {
   Future<Event> updateEvent(Event updatedEvent) async {
     if (AppConstants.useBackend) {
       try {
+        final backendUrl = await AppConstants.getBackendUrl();
         final response = await http.put(
-          Uri.parse('${AppConstants.backendUrl}/events/${updatedEvent.id}'),
+          Uri.parse('$backendUrl/events/${updatedEvent.id}'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(updatedEvent.toJson()),
         );
